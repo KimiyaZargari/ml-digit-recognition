@@ -1,5 +1,7 @@
 import sys
-sys.path.append("..")
+import os
+import math
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import utils
 from utils import *
 import numpy as np
@@ -31,8 +33,20 @@ def compute_probabilities(X, theta, temp_parameter):
     Returns:
         H - (k, n) NumPy array, where each entry H[j][i] is the probability that X[i] is labeled as j
     """
-    #YOUR CODE HERE
-    raise NotImplementedError
+    scores = np.dot(X, theta.T) / temp_parameter
+    
+    # For numerical stability, subtract the max value from each score
+    c = np.max(scores, axis=1, keepdims=True)
+    scores -= c
+    
+    # Compute the exponentials of the adjusted scores
+    exp_scores = np.exp(scores)
+    
+    # Compute the softmax probabilities
+    probabilities = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
+    
+    return probabilities.T 
+
 
 def compute_cost_function(X, Y, theta, lambda_factor, temp_parameter):
     """
@@ -50,8 +64,22 @@ def compute_cost_function(X, Y, theta, lambda_factor, temp_parameter):
     Returns
         c - the cost value (scalar)
     """
-    #YOUR CODE HERE
-    raise NotImplementedError
+    H = compute_probabilities(X, theta, temp_parameter)
+    n = X.shape[0]
+    k = theta.shape[0]
+    d = theta.shape[1]
+    t = 0
+    for i in range(n):
+        for j in range(k):
+            if j == Y[i]:
+                t += np.log(H[j][i])
+    t = t/n
+    b = 0
+    for i in range(k):
+        for j in range(d):
+            b+=theta[i][j] *theta[i][j]
+    b = b*lambda_factor/2
+    return b - t
 
 def run_gradient_descent_iteration(X, Y, theta, alpha, lambda_factor, temp_parameter):
     """
@@ -70,8 +98,30 @@ def run_gradient_descent_iteration(X, Y, theta, alpha, lambda_factor, temp_param
     Returns:
         theta - (k, d) NumPy array that is the final value of parameters theta
     """
-    #YOUR CODE HERE
-    raise NotImplementedError
+    n = X.shape[0]
+    k = theta.shape[0]
+    
+    # Compute the probabilities using the softmax function
+    probabilities = compute_probabilities(X, theta, temp_parameter)
+    
+    # Create the sparse indicator matrix (n, k)
+    row_indices = np.arange(n)
+    col_indices = Y
+    data = np.ones(n)
+    indicator = sparse.coo_matrix((data, (row_indices, col_indices)), shape=(n, k)).toarray()
+    
+    # Compute the gradient of the loss function with respect to theta
+    gradient =np.add(np.multiply( -1 / (temp_parameter * n),  np.dot((indicator - probabilities.T).T, X)) , np.multiply(lambda_factor , theta))
+    
+    # Update theta
+    theta -= alpha * gradient
+    
+    return theta
+
+
+        
+
+
 
 def update_y(train_y, test_y):
     """
@@ -90,8 +140,7 @@ def update_y(train_y, test_y):
         test_y_mod3 - (n, ) NumPy array containing the new labels (a number between 0-2)
                     for each datapoint in the test set
     """
-    #YOUR CODE HERE
-    raise NotImplementedError
+    return (train_y % 3, test_y % 3)
 
 def compute_test_error_mod3(X, Y, theta, temp_parameter):
     """
@@ -108,8 +157,8 @@ def compute_test_error_mod3(X, Y, theta, temp_parameter):
     Returns:
         test_error - the error rate of the classifier (scalar)
     """
-    #YOUR CODE HERE
-    raise NotImplementedError
+    assigned_labels = get_classification(X, theta, temp_parameter) % 3
+    return 1 - np.mean(assigned_labels == Y % 3)
 
 def softmax_regression(X, Y, temp_parameter, alpha, lambda_factor, k, num_iterations):
     """
