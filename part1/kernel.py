@@ -1,9 +1,5 @@
 import numpy as np
 
-### Functions for you to fill in ###
-
-
-
 def polynomial_kernel(X, Y, c, p):
     """
         Compute the polynomial kernel between two matrices X and Y::
@@ -19,8 +15,12 @@ def polynomial_kernel(X, Y, c, p):
         Returns:
             kernel_matrix - (n, m) Numpy array containing the kernel matrix
     """
-    # YOUR CODE HERE
-    raise NotImplementedError
+    dot_product = np.dot(X, Y.T)
+    
+    # Add the coefficient c to each computed dot product
+    kernel_matrix = (dot_product + c) ** p
+    
+    return kernel_matrix
 
 
 
