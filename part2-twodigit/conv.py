@@ -1,10 +1,13 @@
 import numpy as np
 import torch
 import torch.nn as nn
+import os
 import torch.nn.functional as F
 from train_utils import batchify_data, run_epoch, train_model, Flatten
 import utils_multiMNIST as U
-path_to_data_dir = '../Datasets/'
+
+cur_path = os.path.dirname(__file__)
+path_to_data_dir =  os.path.join( cur_path,os.path.pardir, 'Datasets\\') 
 use_mini_dataset = True
 
 batch_size = 64
@@ -13,23 +16,37 @@ nb_epoch = 30
 num_classes = 10
 img_rows, img_cols = 42, 28 # input image dimensions
 
-
-
 class CNN(nn.Module):
-
     def __init__(self, input_dimension):
         super(CNN, self).__init__()
-        # TODO initialize model layers here
+        self.linear1 = nn.Linear(input_dimension, 64)
+        self.linear2 = nn.Linear(64, 64)
+        self.linear_first_digit = nn.Linear(64, 10)
+        self.linear_second_digit = nn.Linear(64, 10)
+
+        self.encoder = nn.Sequential(
+              nn.Conv2d(1, 8, (3, 3)),
+              nn.ReLU(),
+              nn.MaxPool2d((2, 2)),
+              nn.Conv2d(8, 16, (3, 3)),
+              nn.ReLU(),
+              nn.MaxPool2d((2, 2)),
+              Flatten(),
+              nn.Linear(720, 128),
+              nn.Dropout(0.5),
+        )
+
+        self.first_digit_classifier = nn.Linear(128,10)
+        self.second_digit_classifier = nn.Linear(128,10)
 
     def forward(self, x):
-
-        # TODO use model layers to predict the two digits
-
+        out = self.encoder(x)
+        out_first_digit = self.first_digit_classifier(out)
+        out_second_digit = self.second_digit_classifier(out)
         return out_first_digit, out_second_digit
-
+    
 def main():
     X_train, y_train, X_test, y_test = U.get_data(path_to_data_dir, use_mini_dataset)
-
     # Split into train and dev
     dev_split_index = int(9 * len(X_train) / 10)
     X_dev = X_train[dev_split_index:]

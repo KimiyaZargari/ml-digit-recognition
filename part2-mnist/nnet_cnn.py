@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 
-import _pickle as c_pickle, gzip
 import numpy as np
 from tqdm import tqdm
 import torch
@@ -8,7 +7,8 @@ import torch.autograd as autograd
 import torch.nn.functional as F
 import torch.nn as nn
 import sys
-sys.path.append("..")
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import utils
 from utils import *
 from train_utils import batchify_data, run_epoch, train_model, Flatten
@@ -41,12 +41,19 @@ def main():
     test_batches = batchify_data(X_test, y_test, batch_size)
 
     #################################
-    ## Model specification TODO
+    ## Model specification 
     model = nn.Sequential(
-              nn.Conv2d(1, 32, (3, 3)),
-              nn.ReLU(),
-              nn.MaxPool2d((2, 2)),
-            )
+        nn.Conv2d(1, 32, (3, 3)),  # Convolutional layer with 32 filters of size 3x3
+        nn.ReLU(),  # ReLU nonlinearity
+        nn.MaxPool2d((2, 2)),  # Max pooling layer with size 2x2
+        nn.Conv2d(32, 64, (3, 3)),  # Convolutional layer with 64 filters of size 3x3
+        nn.ReLU(),  # ReLU nonlinearity
+        nn.MaxPool2d((2, 2)),  # Max pooling layer with size 2x2
+        nn.Flatten(),  # Flatten layer
+        nn.Linear(64 * 5 * 5, 128),  # Fully connected layer with 128 neurons
+        nn.Dropout(0.5),  # Dropout layer with drop probability 0.5
+        nn.Linear(128, 10)  # Fully connected layer with 10 neurons
+    )
     ##################################
 
     train_model(train_batches, dev_batches, model, nesterov=True)
